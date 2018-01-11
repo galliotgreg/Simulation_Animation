@@ -5,12 +5,9 @@ import random
 
 from pygame.locals import *
 from qtconsole.styles import dark_color
-
-pygame.init()
+from scipy.spatial import distance
 
 screen = pygame.display.set_mode((1024, 768))
-
-pygame.display.update()
 
 red = (255,0,0)
 green = (0,255,0)
@@ -20,27 +17,74 @@ white = (255,255,255)
 black = (0,0,0)
 pink = (255,200,200)
 
-pygame.display.update()
+colorC = (0,0,0)
 
-while (True):
+nb_joins_max = 4
+nb_bones_max = 3
 
-    colorR = random.randrange(1,255,1)
-    colorG = random.randrange(1,255,1)
-    colorB = random.randrange(1,255,1)
+nb_joins = 0
+nb_bones = 0
 
-    pos = pygame.mouse.get_pos()
+joins = []
+bones = []
 
-    distance = math.sqrt(pos[0] * pos[0] + pos[1] * pos[1])
+
+def distance(p1,p2):
+    dist = math.sqrt((p2[0]-p1[0])**2 + (p2[1] - p1[1])**2)
+    return dist
+
+def add_bones():
+    global nb_joins
+    global joins
+    global nb_bones
+    global bones
+
+    print("add_bones")
+    if(len(joins) < 4 ):
+        global nb_joins
+        nb_joins += 1
+        pos = pygame.mouse.get_pos()
+        joins.append(pos)
+
+
+def draw_bones():
+    print("draw_bones")
+    global joins
+    global nb_joins
+    pygame.draw.lines(screen, white, False, joins, 1)
+
+def draw_joins():
+    print("draw_joins")
+    global joins
+    global nb_joins
+    for join in joins :
+        pygame.draw.circle(screen, red, join, 3, 1)
+
+def main():
+    print("main")
+    pygame.init()
+    pygame.display.update()
+
+    colorR = random.randrange(1, 255, 1)
+    colorG = random.randrange(1, 255, 1)
+    colorB = random.randrange(1, 255, 1)
 
     colorC = (colorR, colorG, colorB)
-    pygame.draw.lines(screen, colorC, False, [(1024/2, 768/2), (pos[0], pos[1])], 1)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT: sys.exit()
-        if event.type == pygame.MOUSEBUTTONUP:
-            pos = pygame.mouse.get_pos()
-            screen.fill(black)
-            pygame.draw.lines(screen, white, False, [(1024/2, 768/2), (pos[0], pos[1])], 1)
+    global nb_joins
 
-    pygame.display.flip()
-    pygame.time.delay(10)
+    while (True):
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: sys.exit()
+            if event.type == pygame.MOUSEBUTTONUP:
+                if(nb_joins < nb_joins_max):
+                    add_bones()
+                    if(nb_joins > 1):
+                        draw_bones()
+                    draw_joins()
+
+        pygame.display.flip()
+        pygame.time.delay(10)
+
+main()
