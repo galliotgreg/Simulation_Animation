@@ -9,82 +9,48 @@ from scipy.spatial import distance
 
 screen = pygame.display.set_mode((1024, 768))
 
-red = (255,0,0)
-green = (0,255,0)
-blue = (0,0,255)
-darkBlue = (0,0,128)
-white = (255,255,255)
-black = (0,0,0)
-pink = (255,200,200)
-
-colorC = (0,0,0)
-
-nb_joins_max = 4
-nb_bones_max = 3
-
-nb_joins = 0
-nb_bones = 0
-
-joins = []
-bones = []
-
-
-def distance(p1,p2):
-    dist = math.sqrt((p2[0]-p1[0])**2 + (p2[1] - p1[1])**2)
-    return dist
-
-def add_bones():
-    global nb_joins
-    global joins
-    global nb_bones
-    global bones
-
-    print("add_bones")
-    if(len(joins) < 4 ):
-        global nb_joins
-        nb_joins += 1
-        pos = pygame.mouse.get_pos()
-        joins.append(pos)
-
-
-def draw_bones():
-    print("draw_bones")
-    global joins
-    global nb_joins
-    pygame.draw.lines(screen, white, False, joins, 1)
-
-def draw_joins():
-    print("draw_joins")
-    global joins
-    global nb_joins
-    for join in joins :
-        pygame.draw.circle(screen, red, join, 3, 1)
-
 def main():
-    print("main")
     pygame.init()
     pygame.display.update()
 
-    colorR = random.randrange(1, 255, 1)
-    colorG = random.randrange(1, 255, 1)
-    colorB = random.randrange(1, 255, 1)
+    angles = [0, 90, 45]
+    distances = [200, 50, 100]
+    joins = [(int(1024/2), int(768/2))]
 
-    colorC = (colorR, colorG, colorB)
+    x_temp = 1024/2
+    y_temp = 768/2
 
-    global nb_joins
+    for i in range(0,len(angles)):
+        print(joins)
+        angle_res = 0
+        distance_res = 0
 
-    while (True):
+        angle_res += math.radians(angles[i])
+        print("angle_res")
+        print(angle_res)
 
+        distance_res += distances[i]
+        print("distance_res")
+        print(distance_res)
+
+        x_temp += math.cos(angle_res) * distance_res
+        y_temp += math.sin(angle_res) * distance_res
+
+        print("x")
+        print(x_temp)
+        print("y")
+        print(y_temp)
+
+        joins.append((int(x_temp), int(y_temp)))
+    for join in joins:
+        pygame.draw.circle(screen, (255,0,0), join, 3, 1)
+    pygame.draw.lines(screen, (255,255,255), False, joins, 1)
+
+    pygame.display.flip()
+
+    while (True) :
         for event in pygame.event.get():
-            if event.type == pygame.QUIT: sys.exit()
-            if event.type == pygame.MOUSEBUTTONUP:
-                if(nb_joins < nb_joins_max):
-                    add_bones()
-                    if(nb_joins > 1):
-                        draw_bones()
-                    draw_joins()
-
-        pygame.display.flip()
-        pygame.time.delay(10)
+            if event.type == pygame.QUIT:
+                sys.exit()
 
 main()
