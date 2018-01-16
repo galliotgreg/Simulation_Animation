@@ -9,7 +9,7 @@ screen = pygame.display.set_mode((1024, 768))
 angles = [0, 0, 0]
 angles_courants = [0, 0, 0]
 
-target_point = (int(1024/2) - 200, int(768/2) - 200)
+target_point = (int(1024/2) - 300, int(768/2) - 300)
 init_point = (int(1024/2), int(768/2))
 
 distances = [200, 50, 100]
@@ -36,56 +36,48 @@ def step_one():
 
     global target_point
 
-    #A'
-    joins[len(joins) - 1] = target_point
-    draw()
-    #d
-    direction = calcul_direction(joins[len(joins)-1], joins[len(joins)-2])
-    print(direction)
+    for i in range(1, len(joins)):
+        pygame.time.wait(200)
+        if i == 1:
+            #A'
+            joins[len(joins) - i] = target_point
+            draw()
 
-    #l
-    dist = distances[2]
+        #d
+        direction = calcul_direction(joins[len(joins)-i], joins[len(joins)-i-1])
+        print(direction)
 
-    #B'
-    joins[len(joins) - 2] = (target_point[0] + int(dist * direction[0]), target_point[1]+ int(dist * direction[1]))
-    target_point = joins[len(joins) - 2]
+        #l
+        dist = distances[3-i]
+
+        #B'
+        joins[len(joins) -i-1] = (joins[len(joins) -i][0] + int(dist * direction[0]), joins[len(joins) -i][1]+ int(dist * direction[1]))
+
+        draw()
 
 
 def step_two():
 
-    global target_point
+    global init_point
 
-    #A'
-    joins[len(joins) - 2] = target_point
-    draw()
-    #d
-    direction = calcul_direction(joins[len(joins)-2], joins[len(joins)-3])
-    print(direction)
+    for i in range(0, len(joins)-1):
+        pygame.time.wait(200)
+        if i == 0:
+            #A'
+            joins[i] = init_point
+            draw()
 
-    #l
-    dist = distances[1]
+        #d
+        direction = calcul_direction(joins[i], joins[i+1])
+        print(direction)
 
-    #B'
-    joins[len(joins) - 3] = (target_point[0] + int(dist * direction[0]), target_point[1]+ int(dist * direction[1]))
-    target_point = joins[len(joins) - 3]
+        #l
+        dist = distances[i]
 
-def step_three():
+        #B'
+        joins[i+1] = (joins[i][0] + int(dist * direction[0]), joins[i][1] + int(dist * direction[1]))
 
-    global target_point
-
-    #A'
-    joins[len(joins) - 3] = target_point
-    draw()
-    #d
-    direction = calcul_direction(joins[len(joins)-3], joins[len(joins)-4])
-    print(direction)
-
-    #l
-    dist = distances[0]
-
-    #B'
-    joins[len(joins) - 4] = (target_point[0] + int(dist * direction[0]), target_point[1]+ int(dist * direction[1]))
-    target_point = joins[len(joins) - 4]
+        draw()
 
 
 def draw():
@@ -136,14 +128,14 @@ def main():
     global angles
     init()
     draw()
-    pygame.time.wait(200)
-    step_one()
-    draw()
-    pygame.time.wait(200)
-    step_two()
-    draw()
-    print(joins)
-    pygame.draw.lines(screen, (255, 255, 255), False, joins, 1)
+
+    for i in range(0,14):
+        step_one()
+        print(joins)
+        step_two()
+        print(joins)
+
+        pygame.draw.lines(screen, (255, 255, 255), False, joins, 1)
 
     while (True) :
         for event in pygame.event.get():
