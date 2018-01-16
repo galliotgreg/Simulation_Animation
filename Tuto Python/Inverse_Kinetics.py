@@ -3,16 +3,17 @@ from html.parser import interesting_normal
 import pygame
 import sys
 import math
+from random import randint
 
 screen = pygame.display.set_mode((1024, 768))
 
-angles = [0, 0, 0]
-angles_courants = [0, 0, 0]
+angles = [0,0,0,0]
+angles_courants = [0,0,0,0]
 
 target_point = (int(1024/2) - 300, int(768/2) - 300)
 init_point = (int(1024/2), int(768/2))
 
-distances = [200, 50, 100]
+distances = [50,50,50,50]
 joins = [init_point]
 
 def calcul_norme(p):
@@ -37,11 +38,9 @@ def step_one():
     global target_point
 
     for i in range(1, len(joins)):
-        pygame.time.wait(200)
         if i == 1:
             #A'
             joins[len(joins) - i] = target_point
-            draw()
 
         #d
         direction = calcul_direction(joins[len(joins)-i], joins[len(joins)-i-1])
@@ -53,19 +52,15 @@ def step_one():
         #B'
         joins[len(joins) -i-1] = (joins[len(joins) -i][0] + int(dist * direction[0]), joins[len(joins) -i][1]+ int(dist * direction[1]))
 
-        draw()
-
 
 def step_two():
 
     global init_point
 
     for i in range(0, len(joins)-1):
-        pygame.time.wait(200)
         if i == 0:
             #A'
             joins[i] = init_point
-            draw()
 
         #d
         direction = calcul_direction(joins[i], joins[i+1])
@@ -76,8 +71,6 @@ def step_two():
 
         #B'
         joins[i+1] = (joins[i][0] + int(dist * direction[0]), joins[i][1] + int(dist * direction[1]))
-
-        draw()
 
 
 def draw():
@@ -99,7 +92,7 @@ def init():
     global distances
     global joins
 
-    distances = [200, 50, 100]
+    distances = [50,50,50,50]
     joins = [init_point]
 
     x_temp = 1024 / 2
@@ -126,21 +119,28 @@ def init():
 def main():
 
     global angles
+    global target_point
     init()
     draw()
-
-    for i in range(0,14):
-        step_one()
-        print(joins)
-        step_two()
-        print(joins)
-
-        pygame.draw.lines(screen, (255, 255, 255), False, joins, 1)
 
     while (True) :
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+        pygame.time.wait(200)
+
+        for i in range(0, 14):
+            step_one()
+            print(joins)
+            step_two()
+            print(joins)
+        draw()
+
+        rand_x = randint(0,300)
+        rand_y = randint(0,300)
+
+        target_point = (int(1024/2) - rand_x, int(768/2) - rand_y)
+
 
 
 main()
