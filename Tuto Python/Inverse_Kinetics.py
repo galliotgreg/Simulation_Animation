@@ -138,8 +138,10 @@ def main():
 
         rand_x = randint(0,300)
         rand_y = randint(0,300)
+        rand_x_signe = randint(-1,1)
+        rand_y_signe = randint(-1, 1)
 
-        target_point = (int(1024/2) - rand_x, int(768/2) - rand_y)
+        target_point = (int(1024/2) - rand_x * rand_x_signe, int(768/2) - rand_y * rand_y_signe)
 
 
 
