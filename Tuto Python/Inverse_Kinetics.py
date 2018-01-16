@@ -127,7 +127,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-        pygame.time.wait(200)
+        #pygame.time.wait(200)
 
         for i in range(0, 14):
             step_one()
@@ -141,8 +141,7 @@ def main():
         rand_x_signe = randint(-1,1)
         rand_y_signe = randint(-1, 1)
 
-        target_point = (int(1024/2) - rand_x * rand_x_signe, int(768/2) - rand_y * rand_y_signe)
-
-
+        #target_point = (int(1024/2) - rand_x * rand_x_signe, int(768/2) - rand_y * rand_y_signe)
+        target_point = pygame.mouse.get_pos()
 
 main()
