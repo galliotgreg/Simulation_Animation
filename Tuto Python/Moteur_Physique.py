@@ -76,13 +76,23 @@ class Scene:
             ground.draw_ground()
 
     def calcul_collision(self):
+        #collision box vs ground
         for box in self.boxes :
             for ground in self.grounds :
                 if(box.position[1] + box.height_box >= ground.position[1]) :
                     box.isColliding = True
 
-
-
+        #collision box vs box
+        for box1 in self.boxes:
+            for box2 in self.boxes:
+                if box1 is not box2:
+                    if box1.position[1] + box1.height_box >= box2.position[1]:
+                       if box2.position[0] <= box1.position[0] <= (box2.position[0] + box2.width_box):
+                           if box2.isColliding:
+                               box1.isColliding = True
+                       if box2.position[0] <= box1.position[0] + box1.width_box <= (box2.position[0] + box2.width_box):
+                            if box2.isColliding:
+                                box1.isColliding = True
 
 
 def init():
@@ -97,8 +107,8 @@ def main():
     scene = Scene()
 
     box1 = Box((50, 50), 1000)
-    box2 = Box((101, 50),10000)
-    box3 = Box((152, 50),100000)
+    box2 = Box((100, 50),10000)
+    box3 = Box((132, 50),100000)
 
     ground1 = Ground((0, 760))
 
