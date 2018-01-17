@@ -80,18 +80,21 @@ class Scene:
         #collision box vs ground
         for box in self.boxes:
             for ground in self.grounds:
-                if(box.position[1] + box.height_box >= ground.position[1]):
-                    if(ground.position[0] <= box.position[0] <= ground.position[0]+ ground.width_ground):
+                if box.position[1] + box.height_box >= ground.position[1]:
+                    if ground.position[0] <= box.position[0] <= ground.position[0]+ ground.width_ground:
                         box.isColliding = True
+                        box.position = (box.position[0],ground.position[1] - box.height_box)
 
         #collision box vs box
         for box1 in self.boxes:
             for box2 in self.boxes:
                 if box1 is not box2:
                     if box1.position[1] + box1.height_box >= box2.position[1]:
-                       if box2.position[0] <= box1.position[0] <= (box2.position[0] + box2.width_box) or box2.position[0] <= box1.position[0] + box1.width_box <= (box2.position[0] + box2.width_box):
-                           if box2.isColliding:
-                               box1.isColliding = True
+                        if box2.position[0] <= box1.position[0] <= (box2.position[0] + box2.width_box) or box2.position[0] <= box1.position[0] + box1.width_box <= (box2.position[0] + box2.width_box):
+                            if box2.isColliding:
+                                if not box1.isColliding:
+                                    box1.isColliding = True
+                                    box1.position = (box1.position[0], box2.position[1] - box1.height_box)
 
 
 def init():
