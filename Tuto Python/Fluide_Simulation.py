@@ -11,10 +11,14 @@ screen = pygame.display.set_mode((width, height))
 
 deltaTime = 50
 
-k_spring = 0.25
+k_spring = 0.3
+k_density = 0.0001
+
+k = 0.004
+k_near = 0.01
 
 g = (0, 9)
-density_zero = 1
+density_zero = 10
 
 
 class Particule:
@@ -25,9 +29,10 @@ class Particule:
         self.forces = [g]
         self.color = (0, 255, 0)
         self.density = 0
+        self.pressure = 0
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, self.position, 5, 3)
+        pygame.draw.circle(screen, self.color, (int(self.position[0]), int(self.position[1])), 5, 3)
 
     def compute_position(self):
 
@@ -108,6 +113,7 @@ class Scene:
         for particle1 in self.particles:
             x = particle1.position[0] // self.grid_step
             y = particle1.position[1] // self.grid_step
+            particle1.density = 0
             for i in range(-1, 2):
                 for j in range(-1, 2):
                     list_res = self.grid.setdefault((x + i, y + j), [])
@@ -115,11 +121,75 @@ class Scene:
                         if particle1 is not part:
                             if compute_distance(particle1.position, part.position) <= r:
                                 #ρ near i = ∑ j∈N(i) (1−ri j / h)^2
-                                particle1.density += (1 - (compute_distance(particle1.position, part.position)) / r) ** 2
+                                particle1.density += (1 - (compute_distance(particle1.position, part.position)) / r)**2
+                                particle1.pressure = k_density * (particle1.density - density_zero)
             particle1.color = (
-                min((1 * particle1.density * 20) + 1, 255),
-                min((1 * particle1.density * 10) + 1, 255),
-                min((1 * particle1.density * 4) + 1, 255))
+                min(int(1 * particle1.pressure * 80) + 40, 255),
+                min(int(1 * particle1.pressure * 40) + 20, 255),
+                min(int(1 * particle1.pressure * 16) + 10, 255))
+
+    def compute_double_density_relaxation(self,r):
+        for particle1 in self.particles:
+            density = 0
+            density_near = 0
+
+            x = particle1.position[0] // self.grid_step
+            y = particle1.position[1] // self.grid_step
+
+            #compute density and near - density
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    list_res = self.grid.setdefault((x + i, y + j), [])
+                    for particle2 in list_res:
+                        if particle1 is not particle2:
+                            if compute_distance(particle1.position, particle2.position) <= r:
+                                q = compute_distance(particle1.position, particle2.position) / r
+                                if q < 1:
+                                    density += (1-q)**2
+                                    density_near += (1-q)**3
+
+            #compute pressure and near-pressure
+            pressure = k * (density - density_zero)
+            pressure_near = k_near * density_near
+            dx = (0,0)
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    list_res = self.grid.setdefault((x + i, y + j), [])
+                    for particle2 in list_res:
+                        if particle1 is not particle2:
+                            if compute_distance(particle1.position, particle2.position) <= r:
+                                q = compute_distance(particle1.position, particle2.position) / r
+                                direction = compute_direction(particle1.position, particle2.position)
+                                if q < 1:
+                                    displacement = (deltaTime**2 * (pressure * (1-q) + pressure_near * (1-q)**2) * direction[0],
+                                                    deltaTime**2 * (pressure * (1-q) + pressure_near * (1-q)**2) * direction[1]
+                                                    )
+                                    particle2.position = (particle2.position[0] + displacement[0]/2,
+                                                          particle2.position[1] + displacement[1]/2)
+                                    dx = (dx[0] - displacement[0]/2,
+                                          dx[1] - displacement[1]/2)
+
+            particle1.position = (particle1.position[0] + dx[0],
+                                  particle1.position[1] + dx[1])
+
+
+    def compute_density_relaxation(self, particle1, particle2, rayon):
+        distance = compute_distance(particle1.position, particle2.position)
+        direction = compute_direction(particle1.position, particle2.position)
+        # Dij = ∆t^2 * Pi(1 − rij / h)rˆij
+        density_relaxation = (deltaTime**2 * particle1.pressure *
+                              ((1 - distance) / rayon) *
+                              direction[0],
+                              deltaTime**2 * particle1.pressure *
+                              ((1 - distance) / rayon) *
+                              direction[1]
+                              )
+
+        particle2.position = (particle2.position[0] + int(density_relaxation[0]),
+                              particle2.position[1] + int(density_relaxation[1]))
+
+        particle1.position = (particle1.position[0] + int(density_relaxation[0]),
+                              particle1.position[1] + int(density_relaxation[1]))
 
     def draw_grid(self):
         for i in range(0, width, self.grid_step):
@@ -129,16 +199,33 @@ class Scene:
     def draw(self):
         screen.fill((0, 0, 0))
         self.draw_grid()
-        for particule in self.particles:
-            particule.compute_position()
-        self.compute_density(50)
-        for particule in self.particles:
-            particule.draw()
+        for particle in self.particles:
+            particle.compute_position()
+        self.compute_double_density_relaxation(75)
+        for particle in self.particles:
+            particle.draw()
 
 
 def compute_distance(p1, p2):
     distance = math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
     return distance
+
+
+def compute_norme(p):
+    norme = math.sqrt(p[0]**2 + p[1]**2)
+    if norme == 0:
+        norme = 1
+    return norme
+
+
+def compute_direction(p1,p2):
+    res = (p2[0] - p1[0], p2[1] - p1[1])
+    norme = compute_norme(res)
+    res_norm_x = (res[0]/ norme)
+    res_norm_y = (res[1] / norme)
+
+    res_norm = (res_norm_x, res_norm_y)
+    return res_norm
 
 
 def float_to_int_clamp(nb):
@@ -152,7 +239,7 @@ def init():
 
 def main():
     init()
-    scene = Scene(500, 10)
+    scene = Scene(100, 10)
 
     while True:
         pygame.time.delay(deltaTime)
