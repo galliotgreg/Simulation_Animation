@@ -3,71 +3,121 @@ import sys
 import math
 from random import randint
 
-screen = pygame.display.set_mode((1024, 768))
+width = 600
+height = 600
+_max_int = 10000
 
-g = (0, 2)
+screen = pygame.display.set_mode((width, height))
+
+deltaTime = 50
+
+k_spring = 0.25
+
+g = (0, 9)
 
 
-class Particle:
-    def __init__(self, position, masse):
-        self.position = position
+class Particule:
+    def __init__(self, pos):
+        self.position = pos
+        self.past_position = pos
         self.vitesse = (0, 0)
-        self.masse = masse
-        self.acceleration = (0, 0)
-        self.color = (0,255,0)
-
-    def calcul_vitesse(self):
-        self.vitesse = (self.vitesse[0] + self.acceleration[0], self.vitesse[1] + self.acceleration[1])
-
-    def calcul_position(self):
-        x = self.position[0] + self.vitesse[0]
-        y = self.position[1] + self.vitesse[1]
-        self.position = (x, y)
-
-    def calcul_acceleration(self):
-        self.acceleration = (self.masse * g[0], self.masse * g[1])
+        self.forces = [g]
+        self.color = (255, 255, 255)
 
     def draw(self):
-        if self.position[0] > 1024:
-            self.vitesse = (-self.vitesse[0], self.vitesse[1])
-        if self.position[0] < 0:
-            self.vitesse = (-self.vitesse[0], self.vitesse[1])
-
-        if self.position[1] > 768:
-            self.vitesse = (self.vitesse[0], -self.vitesse[1])
-
-        else:
-            self.calcul_acceleration()
-            self.calcul_vitesse()
-
-        self.calcul_position()
-
+        print("Draw")
+        print(self.position)
+        self.compute_position()
         pygame.draw.circle(screen, self.color, self.position, 5, 3)
+
+    def compute_position(self):
+        print("Compute Position")
+
+        #apply gravity
+        #vi ← vi +∆tg
+        self.vitesse = (self.vitesse[0] + (deltaTime/50) * g[0],
+                        self.vitesse[1] + (deltaTime/50) * g[1])
+
+        #save previous position
+        #x prev i ← x i
+        self.past_position = self.position
+
+        #advance to predicted position
+        self.position = (self.position[0] + (deltaTime/50) * self.vitesse[0],
+                         self.position[1] + (deltaTime/50) * self.vitesse[1])
+
+
+        #add spring and modify position according to springs
+        self.compute_spring_wall_force()
+
+        self.clamp_position()
+
+        #use previous position to compute next velocity
+        #vi ← (xi −x prev i) / ∆t
+        self.compute_vitesse()
+
+    def compute_spring_wall_force(self):
+        print("Compute Spring")
+        if self.position[1] > height-100:
+            distance = compute_distance(self.position, (self.position[0], height-100))
+            direction = (0, -1)
+            force = (distance * k_spring * direction[0], distance * k_spring * direction[1])
+            self.position = (self.position[0] + force[0], self.position[1] + force[1])
+
+        if self.position[0] > width - 10:
+            distance = compute_distance(self.position, (width - 10, self.position[1]))
+            direction = (-1, 0)
+            force = (distance * k_spring * direction[0], distance * k_spring * direction[1])
+            self.position = (self.position[0] + force[0], self.position[1] + force[1])
+
+        if self.position[0] < 10:
+            distance = compute_distance(self.position, (10, self.position[1]))
+            direction = (1, 0)
+            force = (distance * k_spring * direction[0], distance * k_spring * direction[1])
+            self.position = (self.position[0] + force[0], self.position[1] + force[1])
+
+    def compute_vitesse(self):
+        print("Compute Vitesse")
+        self.vitesse = ((self.position[0] - self.past_position[0]),
+                        (self.position[1] - self.past_position[1]))
+        print(self.vitesse)
+
+    def clamp_position(self):
+        self.position = (float_to_int_clamp(self.position[0]),
+                         float_to_int_clamp(self.position[1]))
 
 
 class Scene:
-    def __init__(self, nb_particles):
-        self.particles = []
-        for i in range(0, nb_particles):
-            rand_v_x = randint(0,100)
-            rand_v_y = randint(0,100)
-            rand_v_x_signe = randint(-1,1)
-            rand_v_y_signe = randint(-1, 1)
-            rand_r = randint(0, 255)
-            rand_g = randint(0, 255)
-            rand_b = randint(0, 255)
-            rand_x = randint(0, 1024)
-            rand_y = randint(0, 768)
-            rand_masse = randint(1, 2)
-            p = Particle((rand_x, rand_y), rand_masse)
-            p.color = (rand_r, rand_g, rand_b)
-            p.vitesse = (rand_v_x_signe * rand_v_x, rand_v_y_signe * rand_v_y)
-            self.particles.append(p)
+    def __init__(self, nb_particules, nb_colonne):
+        self.particules = []
+        self.grid = {}
+        self.grid_step = width // nb_colonne
+
+        for i in range(0, nb_particules):
+            self.create_particule()
+
+    def create_particule(self):
+        x = randint(0, width)
+        y = randint(0, height)
+        v_x = randint(-5, 5)
+        v_y = randint(-5, 5)
+        particule = Particule((x, y))
+        particule.vitesse = (v_x, v_y)
+        self.particules.append(particule)
 
     def draw(self):
         screen.fill((0, 0, 0))
-        for p in self.particles:
-            p.draw()
+        for particule in self.particules:
+            particule.draw()
+
+
+def compute_distance(p1, p2):
+    distance = math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
+    return distance
+
+
+def float_to_int_clamp(nb):
+    return min(int(nb), _max_int)
 
 
 def init():
@@ -76,12 +126,12 @@ def init():
 
 
 def main():
-
     init()
-    scene = Scene(500)
+    scene = Scene(1000, 10)
 
     while True:
-        pygame.time.delay(50)
+        pygame.time.delay(deltaTime)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
