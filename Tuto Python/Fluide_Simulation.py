@@ -14,6 +14,7 @@ deltaTime = 50
 k_spring = 0.25
 
 g = (0, 9)
+density_zero = 1
 
 
 class Particule:
@@ -22,16 +23,13 @@ class Particule:
         self.past_position = pos
         self.vitesse = (0, 0)
         self.forces = [g]
-        self.color = (255, 255, 255)
+        self.color = (0, 255, 0)
+        self.density = 0
 
     def draw(self):
-        print("Draw")
-        print(self.position)
-        self.compute_position()
         pygame.draw.circle(screen, self.color, self.position, 5, 3)
 
     def compute_position(self):
-        print("Compute Position")
 
         #apply gravity
         #vi ← vi +∆tg
@@ -57,7 +55,6 @@ class Particule:
         self.compute_vitesse()
 
     def compute_spring_wall_force(self):
-        print("Compute Spring")
         if self.position[1] > height-100:
             distance = compute_distance(self.position, (self.position[0], height-100))
             direction = (0, -1)
@@ -77,10 +74,8 @@ class Particule:
             self.position = (self.position[0] + force[0], self.position[1] + force[1])
 
     def compute_vitesse(self):
-        print("Compute Vitesse")
         self.vitesse = ((self.position[0] - self.past_position[0]),
                         (self.position[1] - self.past_position[1]))
-        print(self.vitesse)
 
     def clamp_position(self):
         self.position = (float_to_int_clamp(self.position[0]),
@@ -89,25 +84,55 @@ class Particule:
 
 class Scene:
     def __init__(self, nb_particules, nb_colonne):
-        self.particules = []
+        self.particles = []
         self.grid = {}
         self.grid_step = width // nb_colonne
 
         for i in range(0, nb_particules):
-            self.create_particule()
+            self.create_particle()
 
-    def create_particule(self):
+    def create_particle(self):
         x = randint(0, width)
         y = randint(0, height)
         v_x = randint(-5, 5)
         v_y = randint(-5, 5)
-        particule = Particule((x, y))
-        particule.vitesse = (v_x, v_y)
-        self.particules.append(particule)
+        particle = Particule((x, y))
+        particle.vitesse = (v_x, v_y)
+        self.particles.append(particle)
+        x = (particle.position[0] // self.grid_step)
+        y = (particle.position[1] // self.grid_step)
+        self.grid.setdefault((x, y), []).append(particle)
+        self.particles.append(particle)
+
+    def compute_density(self, r):
+        for particle1 in self.particles:
+            x = particle1.position[0] // self.grid_step
+            y = particle1.position[1] // self.grid_step
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    list_res = self.grid.setdefault((x + i, y + j), [])
+                    for part in list_res:
+                        if particle1 is not part:
+                            if compute_distance(particle1.position, part.position) <= r:
+                                #ρ near i = ∑ j∈N(i) (1−ri j / h)^2
+                                particle1.density += (1 - (compute_distance(particle1.position, part.position)) / r) ** 2
+            particle1.color = (
+                min((1 * particle1.density * 20) + 1, 255),
+                min((1 * particle1.density * 10) + 1, 255),
+                min((1 * particle1.density * 4) + 1, 255))
+
+    def draw_grid(self):
+        for i in range(0, width, self.grid_step):
+            pygame.draw.lines(screen, (255, 255, 255), False, [(i, 0), (i, height)], 1)
+            pygame.draw.lines(screen, (255, 255, 255), False, [(0, i), (width, i)], 1)
 
     def draw(self):
         screen.fill((0, 0, 0))
-        for particule in self.particules:
+        self.draw_grid()
+        for particule in self.particles:
+            particule.compute_position()
+        self.compute_density(50)
+        for particule in self.particles:
             particule.draw()
 
 
@@ -127,7 +152,7 @@ def init():
 
 def main():
     init()
-    scene = Scene(1000, 10)
+    scene = Scene(500, 10)
 
     while True:
         pygame.time.delay(deltaTime)
